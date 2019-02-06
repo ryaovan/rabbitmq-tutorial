@@ -1,54 +1,57 @@
 import * as amqp from 'amqplib';
 
-export const RABBIT_CONNECTION = 'amqp://rabbitmq:5672';
-let conn = null;
+const { RABBIT_CONNECTION = 'amqp://localhost:5672' } = process.env;
 
-// init connection, restart on failure
-export async initRabbit() {
+// create single exchange
+export async function createExchange(conn, ex, exType) {
   try {
-    conn = await amqp.connect(RABBIT_CONNECTION);
-    console.log('initRabbit - connect successful');
+    const ch = await conn.createChannel();
+    return await ch.assertExchange(ex, exType);
   } catch (err) {
-    console.log(`initRabbit - connect error: ${err}`);
-    setTimeout(() => {
-      initRabbit();
-      clearTimeout();
-    }, 5000);
-    return;
+    throw new Error(`consumer - err: ${err}`);
   }
 }
 
+const consumeFn = msg => console.log(`consumer - msg: ${msg.content}`);
+
 // creates a consumer queue of the exchange
-export async function consumer(ex) {
+export async function setupConsumer(conn, ex, key) {
   try {
-    const ch = conn.createChannel();
-    await ch.assertExchange(ex, 'fanout', { durable: false });
-    const q = await ch.assertQueue('', { durable: false });
-    await ch.bindQueue(q.queue, ex, '');
-    await ch.consume(
-      q.queue,
-      (msg) => {
-        if (msg.content) console.log(`consumer - msg: ${msg.content}`);
-      },
-      { noAck: true },
-    );
+    const ch = await conn.createChannel();
+    const { queue } = await ch.assertQueue('');
+    await ch.bindQueue(queue, ex, key);
+    return ch.consume(queue, consumeFn, { noAck: true });
   } catch (err) {
-    console.log(`consumer - err: ${err}`);
+    throw new Error(`consumer - err: ${err}`);
   }
 }
 
 // sends a message to an exchange
-export async function sendMsg(ex, msg) {
+export async function sendMsg(conn, ex, msg, key) {
   try {
     // create channel
-    const ch = await conn.createChannel();
-    // check exchange and publishes to it
-    await ch.assertExchange(ex, 'fanout', { durable: false });
-    await ch.publish(ex, '', Buffer.from(msg), { persistent: false });
+    const channel = await conn.createChannel();
+    setInterval(async () => {
+      await channel.publish(ex, key, Buffer.from(`${msg} ${new Date()}`));
+    }, 5000);
+
     console.log(`sendMsg - sent: ${msg}`);
   } catch (err) {
-    console.log(`sendMsg - error: ${err}`);
+    throw new Error(`sendMsg - error: ${err}`);
   }
 }
 
-
+// init connection, restart on failure
+export async function initRabbit() {
+  try {
+    return await amqp.connect(RABBIT_CONNECTION);
+  } catch (err) {
+    // restart connection every 5 sec if failed
+    console.log(`initRabbit - connect error: ${err}`);
+    throw new Error(`err: ${err}`);
+    // setTimeout(() => {
+    //   initRabbit();
+    //   clearTimeout();
+    // }, 5000);
+  }
+}
