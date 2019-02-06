@@ -5,11 +5,8 @@ const { RABBIT_CONNECTION = 'amqp://localhost:5672' } = process.env;
 // create single exchange
 export async function createExchange(conn, ex, exType) {
   try {
-    // create channel
     const ch = await conn.createChannel();
-    // create exchange
-    await ch.assertExchange(ex, exType);
-    return;
+    return await ch.assertExchange(ex, exType);
   } catch (err) {
     throw new Error(`consumer - err: ${err}`);
   }
@@ -18,15 +15,11 @@ export async function createExchange(conn, ex, exType) {
 const consumeFn = msg => console.log(`consumer - msg: ${msg.content}`);
 
 // creates a consumer queue of the exchange
-export async function setupConsumer(conn, ex, q, key) {
+export async function setupConsumer(conn, ex, key) {
   try {
-    // create channel
     const ch = await conn.createChannel();
-    // create queue
-    const { queue } = await ch.assertQueue(q);
-    // bind queue to an exchange (follows type)
+    const { queue } = await ch.assertQueue('');
     await ch.bindQueue(queue, ex, key);
-    // start consumer listener
     return ch.consume(queue, consumeFn, { noAck: true });
   } catch (err) {
     throw new Error(`consumer - err: ${err}`);
@@ -38,12 +31,11 @@ export async function sendMsg(conn, ex, msg, key) {
   try {
     // create channel
     const channel = await conn.createChannel();
-    // send message every interval
     setInterval(async () => {
       await channel.publish(ex, key, Buffer.from(`${msg} ${new Date()}`));
     }, 5000);
+
     console.log(`sendMsg - sent: ${msg}`);
-    return;
   } catch (err) {
     throw new Error(`sendMsg - error: ${err}`);
   }
@@ -52,7 +44,6 @@ export async function sendMsg(conn, ex, msg, key) {
 // init connection, restart on failure
 export async function initRabbit() {
   try {
-    // connect and return connection for other functions
     return await amqp.connect(RABBIT_CONNECTION);
   } catch (err) {
     // be sure to run rabbitmq first!

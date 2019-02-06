@@ -15,7 +15,7 @@ export async function createExchange(conn, ex, exType) {
   }
 }
 
-const consumeFn = msg => console.log(`consumer - msg: ${msg.content}`);
+const consumeFn = msg => console.log(`consumer | ex: ${msg.fields.exchange} | msg: ${msg.content}`);
 
 // creates a consumer queue of the exchange
 export async function setupConsumer(conn, ex, q, key) {
@@ -38,11 +38,8 @@ export async function sendMsg(conn, ex, msg, key) {
   try {
     // create channel
     const channel = await conn.createChannel();
-    // send message every interval
-    setInterval(async () => {
-      await channel.publish(ex, key, Buffer.from(`${msg} ${new Date()}`));
-    }, 5000);
-    console.log(`sendMsg - sent: ${msg}`);
+    // send message once
+    await channel.publish(ex, key, Buffer.from(`${msg} ${new Date()}`));
     return;
   } catch (err) {
     throw new Error(`sendMsg - error: ${err}`);
@@ -55,7 +52,7 @@ export async function initRabbit() {
     // connect and return connection for other functions
     return await amqp.connect(RABBIT_CONNECTION);
   } catch (err) {
-    // be sure to run rabbitmq first!
+    // be sure to run rabbitmq npm sfirst!
     console.log(`initRabbit - connect error: ${err}`);
     throw new Error(`err: ${err}`);
   }

@@ -1,0 +1,12 @@
+{
+  "git.ignoreLimitWarning": true,
+  "javascript.format.enable": true,
+  "prettier.eslintIntegration": true,
+  "eslint.autoFixOnSave": true,
+  "eslint.run": "onSave",
+  "editor.formatOnSave": true,
+  "npm.packageManager": "npm",
+  "eslint.packageManager": "npm",
+  "files.autoSave": "onFocusChange",
+  "javascript.validate.enable": false // disables ts error
+}

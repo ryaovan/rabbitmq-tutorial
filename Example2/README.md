@@ -7,5 +7,5 @@ npm start
 
 ## What if I want to run example code in container?
 
-docker build --tag=example1 .
+docker build --tag=example2 .
 docker-compose up
