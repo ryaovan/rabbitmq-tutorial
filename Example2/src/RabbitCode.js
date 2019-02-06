@@ -8,26 +8,45 @@ export async function createExchange(conn, ex, exType) {
     // create channel
     const ch = await conn.createChannel();
     // create exchange
-    await ch.assertExchange(ex, exType);
+    await ch.assertExchange(ex, exType, { durable: false });
     return;
   } catch (err) {
     throw new Error(`consumer - err: ${err}`);
   }
 }
 
-const consumeFn = msg => console.log(`consumer | ex: ${msg.fields.exchange} | msg: ${msg.content}`);
+export async function bindExchange(conn, exDestination, exSource, pattern) {
+  try {
+    /*
+    TODO:
+      1. create connection
+      2. bind exchanges
+    */
+    return;
+  } catch (err) {
+    throw new Error(`consumer - err: ${err}`);
+  }
+}
+
+// const consumeFn = msg => console.log(`consumer | ex: ${msg.fields.exchange} | msg: ${msg.content}`);
 
 // creates a consumer queue of the exchange
-export async function setupConsumer(conn, ex, q, key) {
+export async function setupConsumer(conn, ex, q, pattern) {
   try {
     // create channel
     const ch = await conn.createChannel();
     // create queue
     const { queue } = await ch.assertQueue(q);
     // bind queue to an exchange (follows type)
-    await ch.bindQueue(queue, ex, key);
+    await ch.bindQueue(queue, ex, pattern);
     // start consumer listener
-    return ch.consume(queue, consumeFn, { noAck: true });
+    return ch.consume(
+      queue,
+      (msg) => {
+        console.log(`consumer | ex: ${ex} | msg: ${msg.content}`);
+      },
+      { noAck: true },
+    );
   } catch (err) {
     throw new Error(`consumer - err: ${err}`);
   }
@@ -39,6 +58,9 @@ export async function sendMsg(conn, ex, msg, key) {
     // create channel
     const channel = await conn.createChannel();
     // send message once
+    console.log(`------------------------------`);
+    console.log(`publisher | msg: ${msg}`);
+    console.log(`------------------------------`);
     await channel.publish(ex, key, Buffer.from(`${msg} ${new Date()}`));
     return;
   } catch (err) {
