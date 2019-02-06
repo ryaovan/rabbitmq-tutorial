@@ -35,7 +35,7 @@ export async function setupConsumer(conn, ex, q, pattern) {
     // create channel
     const ch = await conn.createChannel();
     // create queue
-    const { queue } = await ch.assertQueue(q);
+    const { queue } = await ch.assertQueue(q, { durable: false });
     // bind queue to an exchange (follows type)
     await ch.bindQueue(queue, ex, pattern);
     // start consumer listener

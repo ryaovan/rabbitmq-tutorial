@@ -12,7 +12,7 @@ async function main() {
   const conn = await initRabbit();
   await createExchange(conn, ex, type);
   await setupConsumer(conn, ex, q, key);
-  await sendMsg(conn, ex, msg, key);
+  await sendMsg(conn, ex, msg, key); // message sent every 5 sec
 }
 
 main();
